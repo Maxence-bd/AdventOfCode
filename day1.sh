@@ -1,27 +1,53 @@
 #!/bin/bash
 
-FILE=$1
-MDP=50
-compteur=0
+FILE="day1_input"
 
-if [ -f $1 ]; then
-    echo "fichier existe"
-    for ligne in $(<$FILE)
-    do
-        SIGNE=${ligne:0:1}
-        VALUE=${ligne:1}
-        echo $MDP $SIGNE $VALUE
-        if [ "$SIGNE" = "R" ]; then
-            (( MDP = (MDP+VALUE)%100 ))
-        else
-            (( MDP = (MDP-VALUE+100)%100 ))
-        fi
-        if [ "$MDP" = "0" ]; then
-            ((compteur=compteur+1))
-        fi
-    done
-
-    echo "Nb de à égale à " $compteur
-else
-    echo "fichier existe pas"
+if [[ ! -f "$FILE" ]]; then
+    echo "Fichier '$FILE' introuvable" >&2
+    exit 1
 fi
+
+dial=50
+part1=0
+part2=0
+
+while read -r line; do
+    # ignorer les lignes vides
+    [[ -z "$line" ]] && continue
+
+    dir=${line:0:1}        # L ou R
+    steps=${line:1}        # valeur numérique
+
+
+    if [[ "$dir" == "R" ]]; then
+
+        k0=$(( (100 - dial) % 100 ))
+    else
+        k0=$(( dial % 100 ))
+    fi
+
+    if (( k0 == 0 )); then
+        k0=100
+    fi
+
+    if (( steps >= k0 )); then
+        hits=$(( 1 + (steps - k0) / 100 ))
+        (( part2 += hits ))
+    fi
+
+    if [[ "$dir" == "R" ]]; then
+        dial=$(( dial + steps ))
+    else
+        dial=$(( dial - steps ))
+    fi
+
+    dial=$(( (dial % 100 + 100) % 100 ))
+
+    if (( dial == 0 )); then
+        (( part1++ ))
+    fi
+
+done < "$FILE"
+
+echo "Part 1: $part1"
+echo "Part 2: $part2"
