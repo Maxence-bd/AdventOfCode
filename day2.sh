@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 FILE="day2_input"
 
@@ -7,38 +8,75 @@ if [[ ! -f "$FILE" ]]; then
     exit 1
 fi
 
-total=0
+# Partie 1 : séquence répétée exactement deux fois
+has_double_repeat() {
+    local s=$1
+    local len=${#s}
 
-while read -r line; do
-# Parsing fichier pour extraire séquence
-    IFS=',' read -ra SEQS <<< "$line"
-    for seq in "${SEQS[@]}"
-    do
-        #echo "Séquence :" "$seq"
-        IFS='-' read -r -a var <<< "$seq"
-        var1="${var[0]}"
-        var2="${var[1]}"
-        echo "borne inf : " "$var1" " borne supp" "$var2"
+    (( len % 2 )) && return 1  # longueur impaire donc impossible
 
-        # Parcourir séquence
-        for i in $(seq $var1 $var2)
-        do
-            #echo $i
-            size=${#i}
-            moitie=$((size / 2))
-            #echo "premiere partie chiffre " "${i:0:$moitie}" " Deuxième partie " "${i:$moitie}"
-            if [[ "${i:0:$moitie}" = "${i:$moitie}" ]]; then
-                #echo "pareil " "$i" " -> 1ere partie : " "${i:0:$moitie}" " Deuxieme partie : " "${i:$moitie}"
-                ((total+=$i))
-                echo $total
-            fi
+    local half=$(( len / 2 ))
+
+    [[ "${s:0:half}" == "${s:half}" ]]
+}
+
+# Partie 2 : séquence répétée au moins deux fois (motif quelconque)
+has_repeated_pattern() {
+    local s=$1
+    local len=${#s}
+
+    local i j pattern repeat built
+
+    for (( i=1; i<=len/2; i++ )); do
+        (( len % i )) && continue
+
+        pattern=${s:0:i}
+        repeat=$(( len / i ))
+        built=""
+
+        for (( j=0; j<repeat; j++ )); do
+            built+="$pattern"
         done
 
+        if [[ "$built" == "$s" ]]; then
+            return 0
+        fi
     done
-    echo $total
 
-    # Tester si un chiffre est une séquence répétée deux fois
-    # "couper" le chiffre en deux
-    # Regarder si les deux chiffres sont exacts
+    return 1
+}
 
+sum_part1=0
+sum_part2=0
+
+while IFS= read -r line; do
+    # ignorer les lignes vides éventuelles
+    [[ -z "$line" ]] && continue
+
+    IFS=',' read -ra RANGES <<< "$line"
+
+    for range in "${RANGES[@]}"; do
+        # gérer la virgule finale éventuelle
+        [[ -z "$range" ]] && continue
+
+        IFS='-' read -r start end <<< "$range"
+
+        # Boucle sur tous les IDs du range
+        for (( id=start; id<=end; id++ )); do
+            s=$id
+
+#             # Partie 1
+#             if has_double_repeat "$s"; then
+#                 (( sum_part1 += id ))
+#             fi
+
+            # Partie 2
+            if has_repeated_pattern "$s"; then
+                (( sum_part2 += id ))
+            fi
+        done
+    done
 done < "$FILE"
+
+echo "Partie 1 : $sum_part1"
+echo "Partie 2 : $sum_part2"
