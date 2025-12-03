@@ -11,31 +11,49 @@ fi
 
 total=0
 
-while IFS= read -r line; do
-    len=${#line}
-    best=0
-    best1=0
-    best2=0
 
-    # tester toutes les paires (i < j)
-    for (( i=0; i<len; i++ )); do
-        d1=${line:i:1}
+max_joltage_k_number() {
+    local s="$1"
+    local k="$2"              # nombre de chiffres à garder
+    local n=${#s}
 
-        for (( j=i+1; j<len; j++ )); do
-            d2=${line:j:1}
-            val=$(( 10*d1 + d2 ))
+    local result=""
+    local start=0           # début de la fenêtre
+    local need=$k           # chiffres restant à choisir
 
-            if (( val > best )); then
-                best=$val
-                best1=$d1
-                best2=$d2
+    while (( need > 0 )); do
+        local max_digit=-1
+        local max_pos=$start
+
+        # dernier index possible pour ce choix
+        local last_idx=$(( n - need ))
+
+        # on cherche le max dans la fenêtre [start .. last_idx]
+        local i d
+        for (( i=start; i<=last_idx; i++ )); do
+            d=${s:i:1}
+            if (( d > max_digit )); then
+                max_digit=$d
+                max_pos=$i
             fi
         done
+
+        # on ajoute ce chiffre au résultat
+        result+="$max_digit"
+
+        # la prochaine fenêtre commence après ce chiffre
+        start=$(( max_pos + 1 ))
+
+        (( need-- ))
     done
 
-    # ici, best est le plus grand nombre à 2 chiffres possible sur la ligne
-    (( total += best ))
+    echo "$result"
+}
 
+
+while IFS= read -r line; do
+    (( total+=$(max_joltage_k_number $line 12) ))
 done < "$FILE"
 
 echo "Total : $total"
+
